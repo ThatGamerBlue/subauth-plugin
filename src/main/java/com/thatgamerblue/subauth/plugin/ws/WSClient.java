@@ -67,7 +67,7 @@ public class WSClient extends WebSocketClient {
 	@Override
 	public void onClose(int i, String s, boolean b) {
 		if (shouldReconnect) {
-			Bukkit.getScheduler().runTaskLaterAsynchronously(eventHandler.getPlugin(), eventHandler::wsReconnect, 5000);
+			Bukkit.getScheduler().runTaskLaterAsynchronously(eventHandler.getPlugin(), eventHandler::wsConnect, 5000);
 		}
 	}
 

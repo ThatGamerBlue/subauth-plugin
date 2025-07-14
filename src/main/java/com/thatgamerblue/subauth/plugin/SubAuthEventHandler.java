@@ -21,11 +21,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Setter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+
+import static net.kyori.adventure.text.Component.text;
 
 public class SubAuthEventHandler implements Listener {
 	private static final Logger logger = Logger.getLogger("SubAuth");
@@ -37,6 +41,8 @@ public class SubAuthEventHandler implements Listener {
 	private final SubAuthPlugin plugin;
 	@Getter
 	private final Gson gson;
+	@Setter
+	private boolean notConfigured;
 	private WSClient wsClient;
 
 	public SubAuthEventHandler(SubAuthPlugin plugin) {
@@ -48,8 +54,6 @@ public class SubAuthEventHandler implements Listener {
 		))).registerTypeAdapterFactory(GsonTypeAdapters.createFactory(Subscription.class, List.of(
 			TwitchSubscription.class
 		))).disableHtmlEscaping().create();
-
-		wsReconnect();
 	}
 
 	@EventHandler
@@ -59,7 +63,7 @@ public class SubAuthEventHandler implements Listener {
 		boolean whitelist = event.getPlayer().isWhitelisted();
 		boolean subWhitelist = fastCheckWhitelist.contains(playerUuid);
 		if (!isOp && !whitelist && !subWhitelist) {
-			event.getPlayer().kick(Component.text(plugin.getConfig().getString("disallow_message")), PlayerKickEvent.Cause.WHITELIST);
+			event.getPlayer().kick(text(plugin.getConfig().getString("disallow_message")), PlayerKickEvent.Cause.WHITELIST);
 			return;
 		}
 		List<Subscription> matchingSubscriptions = new ArrayList<>();
@@ -71,6 +75,9 @@ public class SubAuthEventHandler implements Listener {
 		String s = "[" + Strings.join(matchingSubscriptions, ", ") + "]";
 		logger.info("Allowing player " + event.getPlayer().getName() + " to join: op? " + isOp + " mc whitelist? " + whitelist);
 		logger.info(event.getPlayer().getName() + ": subWhitelist is " + s);
+		if (notConfigured && isOp) {
+			event.getPlayer().sendMessage(text("[SubAuth] SubAuth has not been properly configured, and will not allow users to join! Please check the config file.", NamedTextColor.DARK_RED));
+		}
 	}
 
 	public void updateWhitelist(Subscription subscription, List<UUID> whitelist) {
@@ -83,7 +90,7 @@ public class SubAuthEventHandler implements Listener {
 		rebuildFastWhitelist();
 	}
 
-	public void wsReconnect() {
+	public void wsConnect() {
 		if (this.wsClient == null || this.wsClient.isShouldReconnect()) {
 			this.wsClient = new WSClient(this, plugin.getConfig());
 			wsClient.connect();
