@@ -1,5 +1,5 @@
 subauth_host: subauth.thatgamerblue.com
-subauth_port: 80
+subauth_port: 443
 disallow_message: You must be a subscriber to join this server!
 tokens:
   - token1

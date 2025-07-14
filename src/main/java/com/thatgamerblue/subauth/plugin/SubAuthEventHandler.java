@@ -81,6 +81,7 @@ public class SubAuthEventHandler implements Listener {
 	}
 
 	public void updateWhitelist(Subscription subscription, List<UUID> whitelist) {
+		logger.info("Received whitelist update for subscription: " + subscription.toString());
 		whitelistedPlayers.put(subscription, whitelist);
 		rebuildFastWhitelist();
 	}
