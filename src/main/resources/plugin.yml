@@ -2,3 +2,4 @@ main: com.thatgamerblue.subauth.plugin.SubAuthPlugin
 name: SubAuth
 version: 1.0
 description: SubAuth for Twitch account linking
+api-version: 1.21
