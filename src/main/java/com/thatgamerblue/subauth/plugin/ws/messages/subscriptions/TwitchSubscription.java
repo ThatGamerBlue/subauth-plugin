@@ -9,4 +9,9 @@ public class TwitchSubscription extends Subscription {
 	String userId;
 	@EqualsAndHashCode.Exclude
 	Instant createdAt;
+
+	@Override
+	String getId() {
+		return userId;
+	}
 }

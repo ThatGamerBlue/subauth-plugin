@@ -7,6 +7,7 @@ import com.thatgamerblue.subauth.plugin.ws.messages.WSMessage;
 import com.thatgamerblue.subauth.plugin.ws.messages.WhitelistUpdateMessage;
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.Getter;
@@ -43,7 +44,7 @@ public class WSClient extends WebSocketClient {
 		if (message instanceof ErrorMessage error) {
 			switch (error.getError()) {
 				case NO_HANDLER:
-					logger.severe("SubAuth backend encountered a critial error, wiping whitelist and disconnecting");
+					logger.severe("SubAuth backend encountered a critical error, wiping whitelist and disconnecting");
 					eventHandler.clearWhitelist();
 					shouldReconnect = false;
 					close();
@@ -59,7 +60,7 @@ public class WSClient extends WebSocketClient {
 					break;
 			}
 		} else if (message instanceof WhitelistUpdateMessage whitelistUpdate) {
-			eventHandler.updateWhitelist(whitelistUpdate.getCause(), whitelistUpdate.getWhitelist());
+			eventHandler.updateWhitelist(whitelistUpdate.getCause(), whitelistUpdate.getWhitelist().stream().map(UUID::fromString).toList());
 		}
 	}
 
