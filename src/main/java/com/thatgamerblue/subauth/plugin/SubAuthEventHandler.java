@@ -84,7 +84,7 @@ public class SubAuthEventHandler implements Listener {
 	}
 
 	public void wsReconnect() {
-		if (this.wsClient.isShouldReconnect()) {
+		if (this.wsClient == null || this.wsClient.isShouldReconnect()) {
 			this.wsClient = new WSClient(this, plugin.getConfig());
 			wsClient.connect();
 		}
