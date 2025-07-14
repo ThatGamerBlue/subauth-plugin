@@ -77,6 +77,7 @@ public class WSClient extends WebSocketClient {
 	}
 
 	private void send(WSMessage message) {
-		send(eventHandler.getGson().toJson(message));
+		String jsonMessage = eventHandler.getGson().toJson(message, WSMessage.class);
+		send(jsonMessage);
 	}
 }
