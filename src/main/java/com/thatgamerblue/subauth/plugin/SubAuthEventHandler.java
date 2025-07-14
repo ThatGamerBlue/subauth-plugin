@@ -2,6 +2,13 @@ package com.thatgamerblue.subauth.plugin;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.thatgamerblue.subauth.plugin.gson.GsonTypeAdapters;
 import com.thatgamerblue.subauth.plugin.util.Strings;
 import com.thatgamerblue.subauth.plugin.ws.WSClient;
@@ -11,6 +18,8 @@ import com.thatgamerblue.subauth.plugin.ws.messages.WSMessage;
 import com.thatgamerblue.subauth.plugin.ws.messages.WhitelistUpdateMessage;
 import com.thatgamerblue.subauth.plugin.ws.messages.subscriptions.Subscription;
 import com.thatgamerblue.subauth.plugin.ws.messages.subscriptions.TwitchSubscription;
+import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +31,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -53,7 +61,7 @@ public class SubAuthEventHandler implements Listener {
 			ErrorMessage.class
 		))).registerTypeAdapterFactory(GsonTypeAdapters.createFactory(Subscription.class, List.of(
 			TwitchSubscription.class
-		))).disableHtmlEscaping().create();
+		))).registerTypeAdapter(Instant.class, new InstantSerializer()).disableHtmlEscaping().create();
 	}
 
 	@EventHandler
@@ -100,5 +108,18 @@ public class SubAuthEventHandler implements Listener {
 
 	private void rebuildFastWhitelist() {
 		fastCheckWhitelist = whitelistedPlayers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
+	}
+
+	private static class InstantSerializer implements JsonSerializer<Instant>, JsonDeserializer<Instant> {
+
+		@Override
+		public Instant deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			return Instant.parse(json.getAsString());
+		}
+
+		@Override
+		public JsonElement serialize(Instant src, Type typeOfSrc, JsonSerializationContext context) {
+			return new JsonPrimitive(src.toString());
+		}
 	}
 }
