@@ -17,7 +17,7 @@ public class SubAuthPlugin extends JavaPlugin {
 			logger.severe("SubAuth needs to be configured before you can use it!");
 			logger.severe("");
 			logger.severe("By default it will disallow all users not opped or manually whitelisted");
-			logger.severe("the Minecraft whitelist system.");
+			logger.severe("via the Minecraft whitelist system.");
 			logger.severe("");
 			logger.severe("Please get a token from the SubAuth server and put it in your config file,");
 			logger.severe("removing the lines that say token1, token2, etc, then restart your server.");
