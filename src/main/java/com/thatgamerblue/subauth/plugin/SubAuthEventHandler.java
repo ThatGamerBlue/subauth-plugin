@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -40,6 +41,7 @@ import org.bukkit.event.player.PlayerKickEvent;
 import static net.kyori.adventure.text.Component.text;
 
 public class SubAuthEventHandler implements Listener {
+	private static final String DEFAULT_NOT_AUTHED_MESSAGE = "You must be a subscriber to join this server!";
 	private static final Logger logger = Logger.getLogger("SubAuth");
 
 	private final Map<Subscription, List<UUID>> whitelistedPlayers = new ConcurrentHashMap<>();
@@ -66,12 +68,14 @@ public class SubAuthEventHandler implements Listener {
 
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) {
-		final UUID playerUuid = event.getPlayer().getUniqueId();
-		boolean isOp = event.getPlayer().isOp();
-		boolean whitelist = event.getPlayer().isWhitelisted();
+		final Player player = event.getPlayer();
+		final UUID playerUuid = player.getUniqueId();
+		boolean isOp = player.isOp();
+		boolean whitelist = player.isWhitelisted();
+		boolean hasPermission = player.hasPermission("subauth.bypass");
 		boolean subWhitelist = fastCheckWhitelist.contains(playerUuid);
-		if (!isOp && !whitelist && !subWhitelist) {
-			event.getPlayer().kick(text(plugin.getConfig().getString("disallow_message")), PlayerKickEvent.Cause.WHITELIST);
+		if (!isOp && !whitelist && !subWhitelist && !hasPermission) {
+			event.getPlayer().kick(text(plugin.getConfig().getString("disallow_message", DEFAULT_NOT_AUTHED_MESSAGE)), PlayerKickEvent.Cause.WHITELIST);
 			return;
 		}
 		List<Subscription> matchingSubscriptions = new ArrayList<>();
@@ -81,7 +85,7 @@ public class SubAuthEventHandler implements Listener {
 			}
 		}
 		String s = "[" + Strings.join(matchingSubscriptions, ", ") + "]";
-		logger.info("Allowing player " + event.getPlayer().getName() + " to join: op? " + isOp + " mc whitelist? " + whitelist);
+		logger.info("Allowing player " + event.getPlayer().getName() + " to join: op? " + isOp + " mc whitelist? " + whitelist + " permission? " + hasPermission);
 		logger.info(event.getPlayer().getName() + ": subWhitelist is " + s);
 		if (notConfigured && isOp) {
 			event.getPlayer().sendMessage(text("[SubAuth] SubAuth has not been properly configured, and will not allow users to join! Please check the config file.", NamedTextColor.DARK_RED));

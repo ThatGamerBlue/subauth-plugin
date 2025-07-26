@@ -3,3 +3,8 @@ name: SubAuth
 version: 1.0
 description: SubAuth for Twitch account linking
 api-version: 1.21
+
+permissions:
+  subauth.bypass:
+    description: allow a user to bypass subauth
+    default: op
