@@ -1,25 +1,8 @@
 package com.thatgamerblue.subauth.plugin;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import com.thatgamerblue.subauth.plugin.gson.GsonTypeAdapters;
 import com.thatgamerblue.subauth.plugin.util.Strings;
 import com.thatgamerblue.subauth.plugin.ws.WSClient;
-import com.thatgamerblue.subauth.plugin.ws.messages.AuthenticationMessage;
-import com.thatgamerblue.subauth.plugin.ws.messages.ErrorMessage;
-import com.thatgamerblue.subauth.plugin.ws.messages.WSMessage;
-import com.thatgamerblue.subauth.plugin.ws.messages.WhitelistUpdateMessage;
 import com.thatgamerblue.subauth.plugin.ws.messages.subscriptions.Subscription;
-import com.thatgamerblue.subauth.plugin.ws.messages.subscriptions.TwitchSubscription;
-import java.lang.reflect.Type;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,17 +11,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerKickEvent;
-
-import static net.kyori.adventure.text.Component.text;
 
 public class SubAuthEventHandler implements Listener {
 	private static final String DEFAULT_NOT_AUTHED_MESSAGE = "You must be a subscriber to join this server!";
@@ -49,21 +28,12 @@ public class SubAuthEventHandler implements Listener {
 
 	@Getter
 	private final SubAuthPlugin plugin;
-	@Getter
-	private final Gson gson;
 	@Setter
 	private boolean notConfigured;
 	private WSClient wsClient;
 
 	public SubAuthEventHandler(SubAuthPlugin plugin) {
 		this.plugin = plugin;
-		this.gson = new GsonBuilder().registerTypeAdapterFactory(GsonTypeAdapters.createFactory(WSMessage.class, List.of(
-			AuthenticationMessage.class,
-			WhitelistUpdateMessage.class,
-			ErrorMessage.class
-		))).registerTypeAdapterFactory(GsonTypeAdapters.createFactory(Subscription.class, List.of(
-			TwitchSubscription.class
-		))).registerTypeAdapter(Instant.class, new InstantSerializer()).disableHtmlEscaping().create();
 	}
 
 	@EventHandler
@@ -75,7 +45,7 @@ public class SubAuthEventHandler implements Listener {
 		boolean hasPermission = player.hasPermission("subauth.bypass");
 		boolean subWhitelist = fastCheckWhitelist.contains(playerUuid);
 		if (!isOp && !whitelist && !subWhitelist && !hasPermission) {
-			event.getPlayer().kick(text(plugin.getConfig().getString("disallow_message", DEFAULT_NOT_AUTHED_MESSAGE)), PlayerKickEvent.Cause.WHITELIST);
+			event.getPlayer().kickPlayer(plugin.getConfig().getString("disallow_message", DEFAULT_NOT_AUTHED_MESSAGE));
 			return;
 		}
 		List<Subscription> matchingSubscriptions = new ArrayList<>();
@@ -88,7 +58,7 @@ public class SubAuthEventHandler implements Listener {
 		logger.info("Allowing player " + event.getPlayer().getName() + " to join: op? " + isOp + " mc whitelist? " + whitelist + " permission? " + hasPermission);
 		logger.info(event.getPlayer().getName() + ": subWhitelist is " + s);
 		if (notConfigured && isOp) {
-			event.getPlayer().sendMessage(text("[SubAuth] SubAuth has not been properly configured, and will not allow users to join! Please check the config file.", NamedTextColor.DARK_RED));
+			event.getPlayer().sendMessage(ChatColor.DARK_RED + "[SubAuth] SubAuth has not been properly configured, and will not allow users to join! Please check the config file.");
 		}
 	}
 
@@ -111,19 +81,10 @@ public class SubAuthEventHandler implements Listener {
 	}
 
 	private void rebuildFastWhitelist() {
-		fastCheckWhitelist = whitelistedPlayers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
-	}
-
-	private static class InstantSerializer implements JsonSerializer<Instant>, JsonDeserializer<Instant> {
-
-		@Override
-		public Instant deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-			return Instant.parse(json.getAsString());
+		Set<UUID> newSet = new HashSet<>();
+		for (List<UUID> list : whitelistedPlayers.values()) {
+			newSet.addAll(list);
 		}
-
-		@Override
-		public JsonElement serialize(Instant src, Type typeOfSrc, JsonSerializationContext context) {
-			return new JsonPrimitive(src.toString());
-		}
+		fastCheckWhitelist = newSet;
 	}
 }

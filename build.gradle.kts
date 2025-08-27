@@ -9,30 +9,32 @@ plugins {
     id("java")
     id("io.freefair.lombok") version "8.14"
     id("com.gradleup.shadow") version "9.0.0-rc1"
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
 }
 
 group = "com.thatgamerblue.subauth"
-version = "1.1"
+version = "1.2"
 
 repositories {
     mavenCentral()
-    maven {
-        name = "papermc"
-        url = uri("https://repo.papermc.io/repository/maven-public/")
-    }
+    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+    mavenLocal()
 }
 
 dependencies {
     implementation("org.java-websocket:Java-WebSocket:1.6.0")
+    implementation("com.googlecode.json-simple:json-simple:1.1.1") {
+        isTransitive = false
+    }
 
-    paperweight.paperDevBundle("1.21.7-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.8-R0.1-SNAPSHOT")
 }
 
-paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
-
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(7))
+}
+
+tasks.shadowJar {
+    relocate("org.json", "com.thatgamerblue.json")
 }
 
 tasks.build {

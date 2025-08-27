@@ -13,7 +13,7 @@ public class SubAuthPlugin extends JavaPlugin {
 
 		if (getConfig().getStringList("tokens").contains("token1")) {
 			Logger logger = Logger.getLogger("SubAuth");
-			logger.severe("=".repeat(53));
+			logger.severe("=====================================================");
 			logger.severe("SubAuth needs to be configured before you can use it!");
 			logger.severe("");
 			logger.severe("By default it will disallow all users not opped or manually whitelisted");
@@ -21,7 +21,7 @@ public class SubAuthPlugin extends JavaPlugin {
 			logger.severe("");
 			logger.severe("Please get a token from the SubAuth server and put it in your config file,");
 			logger.severe("removing the lines that say token1, token2, etc, then restart your server.");
-			logger.severe("=".repeat(53));
+			logger.severe("=====================================================");
 		} else {
 			eventHandler.wsConnect();
 		}

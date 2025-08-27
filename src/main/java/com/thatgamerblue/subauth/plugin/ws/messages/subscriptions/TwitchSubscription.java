@@ -1,14 +1,16 @@
 package com.thatgamerblue.subauth.plugin.ws.messages.subscriptions;
 
-import java.time.Instant;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.json.simple.JSONObject;
 
 @Value
 public class TwitchSubscription extends Subscription {
 	String userId;
-	@EqualsAndHashCode.Exclude
-	Instant createdAt;
+	String createdAt;
+
+	public static TwitchSubscription deserialize(JSONObject object) {
+		return new TwitchSubscription((String) object.get("userId"), (String) object.get("createdAt"));
+	}
 
 	@Override
 	String getId() {

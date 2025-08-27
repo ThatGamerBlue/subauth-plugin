@@ -6,6 +6,7 @@ import com.thatgamerblue.subauth.plugin.ws.messages.ErrorMessage;
 import com.thatgamerblue.subauth.plugin.ws.messages.WSMessage;
 import com.thatgamerblue.subauth.plugin.ws.messages.WhitelistUpdateMessage;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -15,6 +16,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.Configuration;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class WSClient extends WebSocketClient {
 	private static final Logger logger = Logger.getLogger("SubAuth-WSClient");
@@ -40,8 +44,17 @@ public class WSClient extends WebSocketClient {
 
 	@Override
 	public void onMessage(String s) {
-		WSMessage message = eventHandler.getGson().fromJson(s, WSMessage.class);
-		if (message instanceof ErrorMessage error) {
+		JSONParser parser = new JSONParser();
+		WSMessage message;
+		try {
+			message = WSMessage.deserialize((JSONObject) parser.parse(s));
+		} catch (Exception e) {
+			logger.severe("Got invalid message from server: " + s);
+			e.printStackTrace();
+			return;
+		}
+		if (message instanceof ErrorMessage) {
+			ErrorMessage error = (ErrorMessage) message;
 			switch (error.getError()) {
 				case NO_HANDLER:
 					logger.severe("SubAuth backend encountered a critical error, wiping whitelist and disconnecting");
@@ -59,15 +72,25 @@ public class WSClient extends WebSocketClient {
 					logger.severe("One of your SubAuth tokens is owned by a user unknown to SubAuth. Did you unlink your account?");
 					break;
 			}
-		} else if (message instanceof WhitelistUpdateMessage whitelistUpdate) {
-			eventHandler.updateWhitelist(whitelistUpdate.getCause(), whitelistUpdate.getWhitelist().stream().map(UUID::fromString).toList());
+		} else if (message instanceof WhitelistUpdateMessage) {
+			WhitelistUpdateMessage whitelistUpdate = (WhitelistUpdateMessage) message;
+			List<UUID> uuidList = new ArrayList<>();
+			for (String uuidStr : whitelistUpdate.getWhitelist()) {
+				uuidList.add(UUID.fromString(uuidStr));
+			}
+			eventHandler.updateWhitelist(whitelistUpdate.getCause(), uuidList);
 		}
 	}
 
 	@Override
 	public void onClose(int i, String s, boolean b) {
 		if (shouldReconnect) {
-			Bukkit.getScheduler().runTaskLaterAsynchronously(eventHandler.getPlugin(), eventHandler::wsConnect, 5000);
+			Bukkit.getScheduler().runTaskLaterAsynchronously(eventHandler.getPlugin(), new Runnable() {
+				@Override
+				public void run() {
+					eventHandler.wsConnect();
+				}
+			}, 5000);
 		}
 	}
 
@@ -77,7 +100,8 @@ public class WSClient extends WebSocketClient {
 	}
 
 	private void send(WSMessage message) {
-		String jsonMessage = eventHandler.getGson().toJson(message, WSMessage.class);
-		send(jsonMessage);
+		JSONObject jsonObject = new JSONObject();
+		message.serialize(jsonObject);
+		send(jsonObject.toJSONString());
 	}
 }
