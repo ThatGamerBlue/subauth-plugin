@@ -22,6 +22,7 @@ public class SubAuthPlugin extends JavaPlugin {
 			logger.severe("Please get a token from the SubAuth server and put it in your config file,");
 			logger.severe("removing the lines that say token1, token2, etc, then restart your server.");
 			logger.severe("=====================================================");
+			eventHandler.setNotConfigured(true);
 		} else {
 			eventHandler.wsConnect();
 		}
