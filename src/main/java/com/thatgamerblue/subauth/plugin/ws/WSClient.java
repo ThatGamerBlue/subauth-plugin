@@ -18,7 +18,6 @@ import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 public class WSClient extends WebSocketClient {
 	private static final Logger logger = Logger.getLogger("SubAuth-WSClient");
@@ -26,19 +25,24 @@ public class WSClient extends WebSocketClient {
 	private final SubAuthEventHandler eventHandler;
 	private final Configuration config;
 	@Getter
+	private final List<String> invalidTokens;
+	@Getter
 	private boolean shouldReconnect = true;
 
-	public WSClient(SubAuthEventHandler eventHandler, Configuration config) {
+	public WSClient(SubAuthEventHandler eventHandler, Configuration config, WSClient oldClient) {
 		super(URI.create("wss://" + config.getString("subauth_host") + ":" + config.getInt("subauth_port") + "/ws"));
 		this.eventHandler = eventHandler;
 		this.config = config;
+		this.invalidTokens = oldClient == null ? new ArrayList<String>() : oldClient.getInvalidTokens();
 	}
 
 	@Override
 	public void onOpen(ServerHandshake serverHandshake) {
 		List<String> tokens = config.getStringList("tokens");
 		for (String token : tokens) {
-			send(new AuthenticationMessage(token));
+			if (!invalidTokens.contains(token)) {
+				send(new AuthenticationMessage(token));
+			}
 		}
 	}
 
@@ -63,13 +67,15 @@ public class WSClient extends WebSocketClient {
 					close();
 					break;
 				case INVALID_TOKEN:
-					logger.severe("There is an invalid SubAuth token in your config file, please check it, and recreate any tokens if necessary");
+					logger.severe("There is an invalid or outdated SubAuth token in your config file, please check it, and recreate any tokens if necessary");
+					invalidTokens.add(error.getExtraData());
 					break;
 				case ALREADY_SUBSCRIBED:
 					logger.warning("There is a duplicate SubAuth token in your config file, please check it, and remove any duplicates");
 					break;
 				case UNKNOWN_USER:
 					logger.severe("One of your SubAuth tokens is owned by a user unknown to SubAuth. Did you unlink your account?");
+					invalidTokens.add(error.getExtraData());
 					break;
 			}
 		} else if (message instanceof WhitelistUpdateMessage) {

@@ -6,10 +6,12 @@ import org.json.simple.JSONObject;
 @Value
 public class ErrorMessage extends WSMessage {
 	ErrorType error;
+	String extraData;
 
 	public static ErrorMessage deserialize(JSONObject object) {
 		ErrorType type = ErrorType.valueOf((String) object.get("error"));
-		return new ErrorMessage(type);
+		String extraData = (String) object.get("extraData");
+		return new ErrorMessage(type, extraData);
 	}
 
 	@Override
